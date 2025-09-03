@@ -1,0 +1,128 @@
+body, html, #root, .app {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: Arial, sans-serif;
+}
+
+.dark {
+  background: #000;
+  color: #fff;
+}
+
+.light {
+  background: #f8f8f8;
+  color: #000;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+}
+
+.theme-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.search-box {
+  display: flex;
+  justify-content: center;
+  margin: 10px;
+}
+
+.search-box input {
+  padding: 8px;
+  width: 60%;
+  border-radius: 6px;
+  border: 1px solid #444;
+}
+
+.search-box button {
+  margin-left: 5px;
+  padding: 8px 12px;
+  background: #ff004f;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+}
+
+.categories {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 10px;
+}
+
+.categories button {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
+  background: #222;
+  color: #fff;
+  cursor: pointer;
+}
+
+.categories button:hover {
+  background: #ff004f;
+}
+
+.shorts-container {
+  scroll-snap-type: y mandatory;
+  overflow-y: scroll;
+  height: 100vh;
+}
+
+.short {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  scroll-snap-align: start;
+  position: relative;
+}
+
+.short iframe {
+  width: 100%;
+  height: 100%;
+  max-width: 450px;
+}
+
+.overlay {
+  position: absolute;
+  bottom: 80px;
+  left: 20px;
+  max-width: 350px;
+}
+
+.overlay h4 {
+  font-size: 16px;
+  margin: 0;
+}
+
+.overlay p {
+  font-size: 12px;
+  opacity: 0.7;
+  margin: 0;
+}
+
+.actions {
+  position: absolute;
+  bottom: 120px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.actions button {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: white;
+}
