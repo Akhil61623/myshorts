@@ -1,141 +1,160 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Keyboard, Mousewheel } from "swiper/modules";
+import "swiper/css";
+import "./App.css";
 
-function App() {
-  const [query, setQuery] = useState("trending shorts");
-  const [videos, setVideos] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [apiError, setApiError] = useState("");
+const API_KEY = process.env.REACT_APP_YT_API_KEY; // Vercel/.env में रखें
 
-  // Environment variable (Vercel / .env file)
-  const API_KEY = process.env.REACT_APP_YT_API_KEY;
+// --- Single Video Slide: active होने पर play, नहीं तो pause ---
+function VideoSlide({ video, isActive }) {
+  const iframeRef = useRef(null);
+  const vid = video?.id?.videoId;
 
-  const searchYouTube = async () => {
-    setApiError("");
-    if (!API_KEY) {
-      setApiError("❌ Missing API key (REACT_APP_YT_API_KEY).");
-      return;
-    }
-    setLoading(true);
-    try {
-      const url =
-        `https://www.googleapis.com/youtube/v3/search` +
-        `?part=snippet&type=video&maxResults=10` +
-        `&videoEmbeddable=any` + // "true" भी कर सकते हो
-        `&q=${encodeURIComponent(query)}&key=${API_KEY}`;
-
-      const res = await fetch(url);
-      const data = await res.json();
-
-      if (data?.error) {
-        setApiError(`${data.error.code}: ${data.error.message}`);
-        setVideos([]);
-      } else {
-        setVideos(Array.isArray(data.items) ? data.items : []);
-      }
-    } catch (e) {
-      setApiError(String(e));
-    } finally {
-      setLoading(false);
-    }
+  // YouTube Iframe Player API commands via postMessage
+  const send = (func) => {
+    const win = iframeRef.current?.contentWindow;
+    if (!win) return;
+    win.postMessage(
+      JSON.stringify({ event: "command", func, args: [] }),
+      "*"
+    );
   };
 
-  // Load trending shorts on first render
   useEffect(() => {
-    searchYouTube();
+    // active slide → mute + play; inactive → pause
+    if (isActive) {
+      // थोड़ी देर बाद play, ताकि iframe ready हो जाए
+      const t = setTimeout(() => {
+        send("mute");
+        send("playVideo");
+      }, 400);
+      return () => clearTimeout(t);
+    } else {
+      send("pauseVideo");
+    }
     // eslint-disable-next-line
-  }, []);
+  }, [isActive]);
+
+  if (!vid) return null;
+
+  // Shorts layout (vertical), autoplay+mute+playsinline+enablejsapi
+  const src = `https://www.youtube.com/embed/${vid}?autoplay=1&mute=1&playsinline=1&controls=0&rel=0&enablejsapi=1`;
 
   return (
-    <div style={{ background: "#111", minHeight: "100vh", color: "#fff" }}>
-      {/* Header */}
-      <header
-        style={{
-          padding: "16px 20px",
-          background: "#000",
-          color: "#ff007f",
-          fontWeight: 800,
-          fontSize: 26,
-        }}
-      >
-        MAHAMAYA
-      </header>
-
-      {/* Search Bar */}
-      <div
-        style={{
-          padding: "18px",
-          display: "flex",
-          gap: 10,
-          justifyContent: "center",
-        }}
-      >
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search Shorts..."
-          style={{
-            width: "70%",
-            maxWidth: 500,
-            padding: 10,
-            borderRadius: 8,
-            border: "1px solid #333",
-            background: "#0e0e0e",
-            color: "#fff",
-          }}
-        />
-        <button
-          onClick={searchYouTube}
-          style={{
-            padding: "10px 16px",
-            borderRadius: 8,
-            border: "none",
-            background: "#ff007f",
-            color: "#fff",
-            fontWeight: 700,
-            cursor: "pointer",
-          }}
-        >
-          Search
-        </button>
-      </div>
-
-      {/* Status messages */}
-      {loading && <p style={{ textAlign: "center", color: "#aaa" }}>Loading…</p>}
-      {apiError && <p style={{ textAlign: "center", color: "#f66" }}>{apiError}</p>}
-      {!loading && !apiError && videos.length === 0 && (
-        <p style={{ textAlign: "center", color: "#888" }}>No videos found</p>
-      )}
-
-      {/* Video List */}
-      <div
-        style={{
-          display: "grid",
-          placeItems: "center",
-          gap: 24,
-          paddingBottom: 40,
-        }}
-      >
-        {videos.map((v) => (
-          <div key={v.id.videoId}>
-            <iframe
-              width="315"
-              height="560"
-              src={`https://www.youtube.com/embed/${v.id.videoId}?autoplay=1&mute=1`}
-              title={v.snippet.title}
-              frameBorder="0"
-              allow="autoplay; encrypted-media; picture-in-picture"
-              allowFullScreen
-              style={{ borderRadius: 12 }}
-            />
-            <p style={{ maxWidth: 340, textAlign: "center", opacity: 0.9 }}>
-              {v.snippet.title}
-            </p>
-            <small style={{ color: "gray" }}>{v.snippet.channelTitle}</small>
-          </div>
-        ))}
+    <div className="slide">
+      <iframe
+        ref={iframeRef}
+        title={video.snippet?.title || "Short"}
+        src={src}
+        allow="autoplay; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      />
+      <div className="meta">
+        <h4 className="title">{video.snippet?.title}</h4>
+        <div className="channel">{video.snippet?.channelTitle}</div>
       </div>
     </div>
   );
 }
 
-export default App;
+export default function App() {
+  const [query, setQuery] = useState("trending shorts");
+  const [videos, setVideos] = useState([]);
+  const [pageToken, setPageToken] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [apiErr, setApiErr] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const fetchVideos = async (loadMore = false) => {
+    setApiErr("");
+    if (!API_KEY) {
+      setApiErr("Missing API key: REACT_APP_YT_API_KEY");
+      return;
+    }
+    setLoading(true);
+    try {
+      const base = new URL("https://www.googleapis.com/youtube/v3/search");
+      base.searchParams.set("part", "snippet");
+      base.searchParams.set("type", "video");
+      base.searchParams.set("maxResults", "8");
+      // embeddable filter रखें; अगर results कम हों तो 'any' कर सकते हैं
+      base.searchParams.set("videoEmbeddable", "true");
+      base.searchParams.set("q", query);
+      base.searchParams.set("key", API_KEY);
+      if (loadMore && pageToken) base.searchParams.set("pageToken", pageToken);
+
+      const res = await fetch(base);
+      const data = await res.json();
+
+      if (data?.error) {
+        setApiErr(`${data.error.code}: ${data.error.message}`);
+        if (!loadMore) setVideos([]);
+        setPageToken(null);
+      } else {
+        const list = Array.isArray(data.items) ? data.items : [];
+        setVideos((prev) => (loadMore ? [...prev, ...list] : list));
+        setPageToken(data.nextPageToken || null);
+        if (!loadMore) setActiveIndex(0); // नई search पर पहले slide से
+      }
+    } catch (e) {
+      setApiErr(String(e));
+      if (!loadMore) setVideos([]);
+      setPageToken(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVideos(false);
+    // eslint-disable-next-line
+  }, []);
+
+  return (
+    <div className="app">
+      {/* Header */}
+      <header className="topbar">
+        <div className="brand">MAHAMAYA</div>
+        <div className="searchRow">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search shorts..."
+          />
+          <button onClick={() => fetchVideos(false)}>Search</button>
+        </div>
+      </header>
+
+      {/* Status */}
+      {apiErr && <div className="status err">{apiErr}</div>}
+      {loading && <div className="status">Loading…</div>}
+      {!loading && !apiErr && videos.length === 0 && (
+        <div className="status">No videos found</div>
+      )}
+
+      {/* Vertical Swiper (full screen) */}
+      {videos.length > 0 && (
+        <Swiper
+          direction="vertical"
+          slidesPerView={1}
+          keyboard={{ enabled: true }}
+          mousewheel={{ forceToAxis: true }}
+          modules={[Keyboard, Mousewheel]}
+          className="shortsSwiper"
+          onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
+          // नीचे scroll करने पर और लाएं (edge पर पहुँचें तो)
+          onReachEnd={() => {
+            if (pageToken && !loading) fetchVideos(true);
+          }}
+        >
+          {videos.map((v, i) => (
+            <SwiperSlide key={v.id.videoId}>
+              <VideoSlide video={v} isActive={i === activeIndex} />
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      )}
+    </div>
+  );
+}
