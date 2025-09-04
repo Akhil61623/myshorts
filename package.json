@@ -15,3 +15,8 @@
     "eject": "react-scripts eject"
   }
 }
+"dependencies": {
+  "react": "...",
+  "react-dom": "...",
+  "swiper": "^11.1.3"
+}
