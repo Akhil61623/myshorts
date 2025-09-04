@@ -104,7 +104,7 @@ export default function App() {
     <div className="app dark">
       {/* Sticky Header */}
       <header className="topbar">
-        <div className="brand">महामाया स्टेशनरी</div>
+        <div className="brand">Mahamaya</div>
         <div className="searchRow">
           <input
             type="text"
