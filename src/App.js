@@ -1,135 +1,105 @@
-import React, { useState, useRef, useEffect } from "react";
-import InfiniteScroll from "react-infinite-scroll-component";
-import "./App.css";
+import React, { useState } from "react";
 
-function VideoCard({ video }) {
-  const iframeRef = useRef(null);
-  const containerRef = useRef(null);
+function App() {
+  const [query, setQuery] = useState("trending shorts");
+  const [videos, setVideos] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // जो वीडियो viewport में 60% से ज्यादा आए, वही play; बाहर जाए तो pause
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          const iframe = iframeRef.current;
-          if (!iframe) return;
-          if (e.isIntersecting && e.intersectionRatio >= 0.6) {
-            // Play + mute (mobile autoplay rule)
-            iframe.contentWindow?.postMessage(
-              JSON.stringify({ event: "command", func: "mute", args: [] }),
-              "*"
-            );
-            iframe.contentWindow?.postMessage(
-              JSON.stringify({ event: "command", func: "playVideo", args: [] }),
-              "*"
-            );
-          } else {
-            iframe.contentWindow?.postMessage(
-              JSON.stringify({ event: "command", func: "pauseVideo", args: [] }),
-              "*"
-            );
-          }
-        });
-      },
-      { threshold: [0, 0.6, 1] }
-    );
-
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  const vid = video.id.videoId;
-  const src = `https://www.youtube.com/embed/${vid}?autoplay=1&mute=1&playsinline=1&controls=0&rel=0&enablejsapi=1`;
+  const searchYouTube = async () => {
+    setLoading(true);
+    const API_KEY = process.env.REACT_APP_YT_KEY; // Vercel में env variable
+    try {
+      const response = await fetch(
+        `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=10&videoEmbeddable=true&q=${query}&key=${API_KEY}`
+      );
+      const data = await response.json();
+      setVideos(data.items || []);
+    } catch (error) {
+      console.error("YouTube API error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="short" ref={containerRef}>
-      <iframe
-        ref={iframeRef}
-        src={src}
-        title={video.snippet.title}
-        frameBorder="0"
-        allow="autoplay; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-      />
-      <div className="overlay">
-        <h4>{video.snippet.title}</h4>
-        <p>{video.snippet.channelTitle}</p>
+    <div style={{ backgroundColor: "#111", minHeight: "100vh", color: "white" }}>
+      {/* Header */}
+      <header
+        style={{
+          padding: "15px",
+          backgroundColor: "#000",
+          color: "#ff007f",
+          fontWeight: "bold",
+          fontSize: "24px",
+          textAlign: "left",
+        }}
+      >
+        MAHAMAYA
+      </header>
+
+      {/* Search bar */}
+      <div style={{ padding: "20px", textAlign: "center" }}>
+        <input
+          type="text"
+          placeholder="Search Shorts..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          style={{
+            padding: "10px",
+            width: "70%",
+            maxWidth: "400px",
+            borderRadius: "6px",
+            border: "none",
+          }}
+        />
+        <button
+          onClick={searchYouTube}
+          style={{
+            marginLeft: "10px",
+            padding: "10px 20px",
+            backgroundColor: "#ff007f",
+            border: "none",
+            borderRadius: "6px",
+            color: "white",
+            fontWeight: "bold",
+            cursor: "pointer",
+          }}
+        >
+          Search
+        </button>
+      </div>
+
+      {/* Videos */}
+      <div style={{ textAlign: "center", paddingBottom: "40px" }}>
+        {loading && <p>Loading...</p>}
+
+        {videos.length === 0 && !loading && (
+          <p style={{ color: "gray" }}>No videos found</p>
+        )}
+
+        {videos.map((video) => (
+          <div key={video.id.videoId} style={{ marginBottom: "30px" }}>
+            <iframe
+              width="315"
+              height="560"
+              src={`https://www.youtube.com/embed/${video.id.videoId}?autoplay=1&mute=1`}
+              frameBorder="0"
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+              title={video.snippet.title}
+              style={{ borderRadius: "10px" }}
+            />
+            <p style={{ marginTop: "10px", fontSize: "14px" }}>
+              {video.snippet.title}
+            </p>
+            <small style={{ color: "gray" }}>
+              {video.snippet.channelTitle}
+            </small>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-export default function App() {
-  const [query, setQuery] = useState("trending shorts");
-  const [videos, setVideos] = useState([]);
-  const [pageToken, setPageToken] = useState(null);
-
-  const API_KEY = process.env.REACT_APP_YT_KEY || "YOUR_FALLBACK_KEY";
-
-  const fetchVideos = async (loadMore = false) => {
-    try {
-      const url = new URL("https://www.googleapis.com/youtube/v3/search");
-      url.searchParams.set("part", "snippet");
-      url.searchParams.set("type", "video");
-      url.searchParams.set("maxResults", "8");
-      url.searchParams.set("q", query);
-      url.searchParams.set("key", API_KEY);
-      if (loadMore && pageToken) url.searchParams.set("pageToken", pageToken);
-
-      const res = await fetch(url);
-      const data = await res.json();
-      if (Array.isArray(data.items)) {
-        setVideos((prev) => (loadMore ? [...prev, ...data.items] : data.items));
-        setPageToken(data.nextPageToken || null);
-      } else {
-        setVideos([]);
-        setPageToken(null);
-      }
-    } catch (e) {
-      console.error(e);
-      setVideos([]);
-    }
-  };
-
-  // पेज खुलते ही ऑटो-फेच + autoplay शुरू
-  useEffect(() => {
-    fetchVideos(false);
-    // eslint-disable-next-line
-  }, []);
-
-  return (
-    <div className="app dark">
-      {/* Sticky Header */}
-      <header className="topbar">
-        <div className="brand">Mahamaya</div>
-        <div className="searchRow">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search shorts…"
-          />
-          <button onClick={() => fetchVideos(false)}>Search</button>
-        </div>
-      </header>
-
-      {/* Shorts Feed */}
-      <InfiniteScroll
-        dataLength={videos.length}
-        next={() => fetchVideos(true)}
-        hasMore={!!pageToken}
-        loader={<div className="loader">Loading…</div>}
-        scrollThreshold={0.9}
-      >
-        <div className="shorts-container">
-          {videos.map((v) => (
-            <VideoCard key={v.id.videoId} video={v} />
-          ))}
-        </div>
-      </InfiniteScroll>
-    </div>
-  );
-}
+export default App;
