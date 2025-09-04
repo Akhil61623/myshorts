@@ -1,128 +1,93 @@
+/* बेस */
 body, html, #root, .app {
   margin: 0;
   padding: 0;
   height: 100%;
-  font-family: Arial, sans-serif;
-}
-
-.dark {
   background: #000;
   color: #fff;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
-.light {
-  background: #f8f8f8;
-  color: #000;
-}
-
-.header {
+/* स्टिकी हेडर */
+.topbar{
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #111;
   display: flex;
-  justify-content: space-between;
-  padding: 10px;
-}
-
-.theme-btn {
-  background: none;
-  border: none;
-  font-size: 16px;
-  cursor: pointer;
-}
-
-.search-box {
-  display: flex;
-  justify-content: center;
-  margin: 10px;
-}
-
-.search-box input {
-  padding: 8px;
-  width: 60%;
-  border-radius: 6px;
-  border: 1px solid #444;
-}
-
-.search-box button {
-  margin-left: 5px;
-  padding: 8px 12px;
-  background: #ff004f;
-  border: none;
-  border-radius: 6px;
-  color: white;
-  cursor: pointer;
-}
-
-.categories {
-  display: flex;
-  justify-content: center;
+  flex-direction: column;
   gap: 8px;
-  margin: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #222;
 }
-
-.categories button {
-  padding: 6px 10px;
-  border: none;
-  border-radius: 6px;
-  background: #222;
+.brand{
+  font-weight: 700;
+  letter-spacing: .5px;
+  color: #ff004f;
+  font-size: 18px;
+}
+.searchRow{
+  display: flex;
+  gap: 8px;
+}
+.searchRow input{
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background: #0e0e0e;
   color: #fff;
-  cursor: pointer;
 }
-
-.categories button:hover {
+.searchRow button{
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: none;
   background: #ff004f;
+  color: #fff;
 }
 
-.shorts-container {
+/* फीड: स्नैप स्क्रॉल */
+.shorts-container{
   scroll-snap-type: y mandatory;
-  overflow-y: scroll;
-  height: 100vh;
+  height: calc(100vh - 98px); /* हेडर के नीचे पूरी स्क्रीन */
+  overflow-y: auto;
 }
 
-.short {
-  height: 100vh;
+/* हर शॉर्ट फुलस्क्रीन */
+.short{
+  position: relative;
+  height: calc(100vh - 98px);
   display: flex;
   justify-content: center;
   align-items: center;
   scroll-snap-align: start;
-  position: relative;
 }
-
-.short iframe {
+.short iframe{
   width: 100%;
   height: 100%;
   max-width: 450px;
+  border: 0;
 }
 
-.overlay {
+/* टाइटल ओवरले */
+.overlay{
   position: absolute;
-  bottom: 80px;
-  left: 20px;
-  max-width: 350px;
+  left: 16px;
+  bottom: 70px;
+  max-width: 380px;
 }
-
-.overlay h4 {
+.overlay h4{
+  margin: 0 0 4px 0;
   font-size: 16px;
-  margin: 0;
 }
-
-.overlay p {
+.overlay p{
+  margin: 0;
+  opacity: .75;
   font-size: 12px;
-  opacity: 0.7;
-  margin: 0;
 }
 
-.actions {
-  position: absolute;
-  bottom: 120px;
-  right: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.actions button {
-  background: none;
-  border: none;
-  font-size: 22px;
-  cursor: pointer;
-  color: white;
+.loader{
+  text-align: center;
+  padding: 16px;
+  color: #aaa;
 }
