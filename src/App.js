@@ -1,133 +1,135 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import "./App.css";
 
-function App() {
-  const [query, setQuery] = useState("funny");
-  const [videos, setVideos] = useState([]);
-  const [pageToken, setPageToken] = useState(null);
-  const [likes, setLikes] = useState({});
-  const [darkMode, setDarkMode] = useState(true);
+function VideoCard({ video }) {
+  const iframeRef = useRef(null);
   const containerRef = useRef(null);
 
-  const API_KEY = "AIzaSyBe-kkf2csWbMjWp0t8E35z7vRwn1nAq1Q";
+  // जो वीडियो viewport में 60% से ज्यादा आए, वही play; बाहर जाए तो pause
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
 
-  const searchYouTube = async (loadMore = false) => {
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          const iframe = iframeRef.current;
+          if (!iframe) return;
+          if (e.isIntersecting && e.intersectionRatio >= 0.6) {
+            // Play + mute (mobile autoplay rule)
+            iframe.contentWindow?.postMessage(
+              JSON.stringify({ event: "command", func: "mute", args: [] }),
+              "*"
+            );
+            iframe.contentWindow?.postMessage(
+              JSON.stringify({ event: "command", func: "playVideo", args: [] }),
+              "*"
+            );
+          } else {
+            iframe.contentWindow?.postMessage(
+              JSON.stringify({ event: "command", func: "pauseVideo", args: [] }),
+              "*"
+            );
+          }
+        });
+      },
+      { threshold: [0, 0.6, 1] }
+    );
+
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  const vid = video.id.videoId;
+  const src = `https://www.youtube.com/embed/${vid}?autoplay=1&mute=1&playsinline=1&controls=0&rel=0&enablejsapi=1`;
+
+  return (
+    <div className="short" ref={containerRef}>
+      <iframe
+        ref={iframeRef}
+        src={src}
+        title={video.snippet.title}
+        frameBorder="0"
+        allow="autoplay; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      />
+      <div className="overlay">
+        <h4>{video.snippet.title}</h4>
+        <p>{video.snippet.channelTitle}</p>
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  const [query, setQuery] = useState("trending shorts");
+  const [videos, setVideos] = useState([]);
+  const [pageToken, setPageToken] = useState(null);
+
+  const API_KEY = process.env.REACT_APP_YT_KEY || "YOUR_FALLBACK_KEY";
+
+  const fetchVideos = async (loadMore = false) => {
     try {
       const url = new URL("https://www.googleapis.com/youtube/v3/search");
       url.searchParams.set("part", "snippet");
       url.searchParams.set("type", "video");
-      url.searchParams.set("maxResults", "5");
-      url.searchParams.set("q", query + " shorts");
+      url.searchParams.set("maxResults", "8");
+      url.searchParams.set("q", query);
       url.searchParams.set("key", API_KEY);
       if (loadMore && pageToken) url.searchParams.set("pageToken", pageToken);
 
       const res = await fetch(url);
       const data = await res.json();
-
       if (Array.isArray(data.items)) {
         setVideos((prev) => (loadMore ? [...prev, ...data.items] : data.items));
         setPageToken(data.nextPageToken || null);
+      } else {
+        setVideos([]);
+        setPageToken(null);
       }
-    } catch (err) {
-      console.error("API Error:", err);
+    } catch (e) {
+      console.error(e);
+      setVideos([]);
     }
   };
 
-  const toggleLike = (videoId) => {
-    setLikes((prev) => ({
-      ...prev,
-      [videoId]: !prev[videoId],
-    }));
-  };
+  // पेज खुलते ही ऑटो-फेच + autoplay शुरू
+  useEffect(() => {
+    fetchVideos(false);
+    // eslint-disable-next-line
+  }, []);
 
   return (
-    <div className={`app ${darkMode ? "dark" : "light"}`}>
-      {/* Header */}
-      <div className="header">
-        <h2>🎬 Shorts</h2>
-        <button className="theme-btn" onClick={() => setDarkMode(!darkMode)}>
-          {darkMode ? "☀️ Light" : "🌙 Dark"}
-        </button>
-      </div>
-
-      {/* Search Box */}
-      <div className="search-box">
-        <input
-          type="text"
-          placeholder="Search Shorts..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        <button onClick={() => searchYouTube(false)}>Search</button>
-      </div>
-
-      {/* Categories */}
-      <div className="categories">
-        {["Funny", "Music", "Gaming", "Tech", "Trending"].map((cat) => (
-          <button
-            key={cat}
-            onClick={() => {
-              setQuery(cat === "Trending" ? "trending shorts" : cat);
-              searchYouTube(false);
-            }}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
+    <div className="app dark">
+      {/* Sticky Header */}
+      <header className="topbar">
+        <div className="brand">महामाया स्टेशनरी</div>
+        <div className="searchRow">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search shorts…"
+          />
+          <button onClick={() => fetchVideos(false)}>Search</button>
+        </div>
+      </header>
 
       {/* Shorts Feed */}
       <InfiniteScroll
         dataLength={videos.length}
-        next={() => searchYouTube(true)}
+        next={() => fetchVideos(true)}
         hasMore={!!pageToken}
-        loader={<h4 style={{ textAlign: "center" }}>Loading...</h4>}
+        loader={<div className="loader">Loading…</div>}
         scrollThreshold={0.9}
       >
-        <div className="shorts-container" ref={containerRef}>
-          {videos.map((video) => (
-            <div className="short" key={video.id.videoId}>
-              <iframe
-                src={`https://www.youtube.com/embed/${video.id.videoId}?autoplay=0&mute=1`}
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                title={video.snippet.title}
-              ></iframe>
-
-              <div className="overlay">
-                <h4>{video.snippet.title}</h4>
-                <p>{video.snippet.channelTitle}</p>
-              </div>
-
-              <div className="actions">
-                <button onClick={() => toggleLike(video.id.videoId)}>
-                  {likes[video.id.videoId] ? "❤️" : "🤍"}
-                </button>
-                <button>💬</button>
-                <button
-                  onClick={() =>
-                    navigator.share
-                      ? navigator.share({
-                          title: video.snippet.title,
-                          url: `https://www.youtube.com/watch?v=${video.id.videoId}`,
-                        })
-                      : alert(
-                          "Copy link: " +
-                            `https://www.youtube.com/watch?v=${video.id.videoId}`
-                        )
-                  }
-                >
-                  🔗
-                </button>
-              </div>
-            </div>
+        <div className="shorts-container">
+          {videos.map((v) => (
+            <VideoCard key={v.id.videoId} video={v} />
           ))}
         </div>
       </InfiniteScroll>
     </div>
   );
 }
-
-export default App;
