@@ -1,102 +1,37 @@
-/* Base */
-html, body, #root, .app {
-  height: 100%;
-  margin: 0;
-  background: #000;
-  color: #fff;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-}
+html, body, #root, .app { height: 100%; margin: 0; background: #000; color: #fff; font-family: "Poppins", system-ui, sans-serif; }
 
-/* Header */
+/* header */
 .topbar{
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  background: #0d0d0d;
-  border-bottom: 1px solid #1c1c1c;
-  padding: 10px 12px;
+  position: sticky; top: 0; z-index: 40;
+  background: #0d0d0d; border-bottom: 1px solid #1c1c1c; padding: 12px;
 }
 .brand{
-  font-weight: 900;
-  font-size: 24px;
-  letter-spacing: 1px;
+  font-weight: 900; font-size: 26px; letter-spacing: 1px;
   background: linear-gradient(90deg,#ff2a6d 0%, #ff0062 40%, #ffa62b 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  margin-bottom: 8px;
+  -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 10px;
 }
-.searchRow{
-  display: flex;
-  gap: 8px;
-}
-.searchRow input{
-  flex: 1;
-  padding: 10px;
-  border-radius: 10px;
-  border: 1px solid #2a2a2a;
-  background: #0f0f0f;
-  color: #fff;
-}
-.searchRow button{
-  padding: 10px 14px;
-  border: none;
-  border-radius: 10px;
-  background: #ff0062;
-  color: #fff;
-  font-weight: 700;
-  cursor: pointer;
-}
+.searchRow{ display:flex; gap:10px; }
+.searchRow input{ flex:1; padding:10px; border-radius:10px; border:1px solid #222; background:#0f0f0f; color:#fff; }
+.searchRow button{ padding:10px 14px; border-radius:10px; background:#ff0062; color:#fff; border:none; cursor:pointer; font-weight:700; }
 
-/* Status text */
-.status{
-  text-align: center;
-  padding: 10px;
-  color: #aaa;
-}
-.status.err{ color: #ff6b6b; }
+/* status */
+.status{ text-align:center; padding:12px; color:#aaa; }
+.status.err{ color:#ff7f7f; }
 
-/* Swiper full screen area */
-.shortsSwiper{
-  height: calc(100vh - 100px); /* header के नीचे full viewport */
-}
+/* swiper area */
+.shortsSwiper{ height: calc(100vh - 104px); } /* header + small gap */
 
-/* Each slide */
-.slide{
-  height: 100%;
-  display: grid;
-  place-items: center;
-  position: relative;
-}
-
-/* Responsive vertical frame (9:16) */
+/* slide */
+.slide{ height:100%; display:grid; place-items:center; position:relative; }
 .slide iframe{
-  width: 100%;
-  max-width: 420px;     /* मोबाइल पर सुंदर फिट */
-  aspect-ratio: 9/16;   /* Shorts ratio */
-  border: 0;
-  border-radius: 14px;
-  background: #000;
+  width:100%; max-width:420px; aspect-ratio: 9/16; border:0; border-radius:14px; background:#000;
 }
+.meta{ position:absolute; left:16px; bottom:70px; max-width:72vw; }
+.title{ font-size:15px; margin:0 0 6px 0; }
+.channel{ font-size:12px; opacity:0.8; }
 
-/* Overlay meta */
-.meta{
-  position: absolute;
-  left: 16px;
-  bottom: 72px;
-  max-width: 70vw;
-}
-.title{
-  font-size: 15px;
-  margin: 0 0 4px 0;
-}
-.channel{
-  font-size: 12px;
-  opacity: .75;
-}
-
-/* Small tweaks for very small phones */
-@media (max-width: 360px) {
-  .brand{ font-size: 20px; }
-  .slide iframe{ max-width: 380px; }
+/* small phones */
+@media (max-width:360px){
+  .brand{ font-size:20px; }
+  .slide iframe{ max-width:380px; }
 }
